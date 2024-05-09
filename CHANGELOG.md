@@ -8,6 +8,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2024-05-09
+
+[Compare with previous version](https://github.com/sparkfabrik/terraform-helm-fluentbit/compare/0.1.0...0.2.0)
+
+- Fix the pattern used to catch the FluentBit logs.
+
 ## [0.1.0] - 2024-05-09
 
 - First release.

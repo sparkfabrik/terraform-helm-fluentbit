@@ -121,7 +121,6 @@ variable "default_exclude_from_application_log_group" {
     "ebs-csi-node",
     "efs-csi-controller",
     "efs-csi-node",
-    "fluent-bit-aws-for-fluent-bit",
     "kube-proxy",
     "metric-server-metrics-server",
   ]
