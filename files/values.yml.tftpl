@@ -1,0 +1,222 @@
+# https://github.com/aws/eks-charts/blob/master/stable/aws-for-fluent-bit/values.yaml
+# https://artifacthub.io/packages/helm/aws/aws-for-fluent-bit
+
+service:
+  extraService: |
+    Flush                     ${flush_seconds}
+    Log_Level                 info
+    Daemon                    off
+    Parsers_File              /fluent-bit/etc/parser_extra.conf
+    HTTP_Server               $${HTTP_SERVER}
+    HTTP_Listen               0.0.0.0
+    HTTP_Port                 $${HTTP_PORT}
+    storage.path              /var/fluent-bit/state/flb-storage/
+    storage.sync              normal
+    storage.checksum          off
+    storage.backlog.mem_limit 5M
+  extraParsers: |
+    [PARSER]
+        Name                docker
+        Format              json
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+
+    [PARSER]
+        Name                syslog
+        Format              regex
+        Regex               ^(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
+        Time_Key            time
+        Time_Format         %b %d %H:%M:%S
+
+    [PARSER]
+        Name                container_firstline
+        Format              regex
+        Regex               (?<log>(?<="log":")\S(?!\.).*?)(?<!\\)".*(?<stream>(?<="stream":").*?)".*(?<time>\d{4}-\d{1,2}-\d{1,2}T\d{2}:\d{2}:\d{2}\.\w*).*(?=})
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+
+    [PARSER]
+        Name                cwagent_firstline
+        Format              regex
+        Regex               (?<log>(?<="log":")\d{4}[\/-]\d{1,2}[\/-]\d{1,2}[ T]\d{2}:\d{2}:\d{2}(?!\.).*?)(?<!\\)".*(?<stream>(?<="stream":").*?)".*(?<time>\d{4}-\d{1,2}-\d{1,2}T\d{2}:\d{2}:\d{2}\.\w*).*(?=})
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+
+input:
+  enabled: false
+
+additionalInputs: |
+  [INPUT]
+      Name                tail
+      Tag                 application.*
+      Exclude_Path        ${join(", ", formatlist("/var/log/containers/%s*.log", distinct(additional_exclude_from_application_log_group)))}
+      Path                /var/log/containers/*.log
+      Docker_Mode         On
+      Docker_Mode_Flush   5
+      Docker_Mode_Parser  container_firstline
+      Parser              docker, cri
+      DB                  /var/fluent-bit/state/flb_container.db
+      Mem_Buf_Limit       50MB
+      Skip_Long_Lines     On
+      Refresh_Interval    10
+      Rotate_Wait         30
+      storage.type        filesystem
+      Read_from_Head      $${READ_FROM_HEAD}
+
+  [INPUT]
+      Name                tail
+      Tag                 platform.*
+      Path                ${join(", ", formatlist("/var/log/containers/%s*.log", distinct(additional_include_in_platform_log_group)))}
+      Docker_Mode         On
+      Docker_Mode_Flush   5
+      Docker_Mode_Parser  container_firstline
+      Parser              docker, cri
+      DB                  /var/fluent-bit/state/flb_platform.db
+      Mem_Buf_Limit       50MB
+      Skip_Long_Lines     On
+      Refresh_Interval    10
+      Rotate_Wait         30
+      storage.type        filesystem
+      Read_from_Head      $${READ_FROM_HEAD}
+
+  [INPUT]
+      Name                tail
+      Tag                 fluentbit.*
+      Path                /var/log/containers/fluent-bit-aws-for-fluent-bit*
+      Parser              docker, cri
+      DB                  /var/fluent-bit/state/flb_log.db
+      Mem_Buf_Limit       5MB
+      Skip_Long_Lines     On
+      Refresh_Interval    10
+      Read_from_Head      $${READ_FROM_HEAD}
+
+  [INPUT]
+      Name                tail
+      Tag                 cloudwatch-agent.*
+      Path                /var/log/containers/cloudwatch-agent*
+      Docker_Mode         On
+      Docker_Mode_Flush   5
+      Docker_Mode_Parser  cwagent_firstline
+      Parser              docker, cri
+      DB                  /var/fluent-bit/state/flb_cwagent.db
+      Mem_Buf_Limit       5MB
+      Skip_Long_Lines     On
+      Refresh_Interval    10
+      Read_from_Head      $${READ_FROM_HEAD}
+
+filter:
+  enabled: false
+
+additionalFilters: |
+  [FILTER]
+      Name                kubernetes
+      Match               application.*
+      Kube_URL            https://kubernetes.default.svc:443
+      Kube_Tag_Prefix     application.var.log.containers.
+      Merge_Log           On
+      Merge_Log_Key       log_processed
+      K8S-Logging.Parser  On
+      K8S-Logging.Exclude Off
+      Labels              Off
+      Annotations         Off
+
+  [FILTER]
+      Name                nest
+      Match               application.*
+      Operation           lift
+      Nested_under        kubernetes
+      Add_prefix          Kube.
+
+  [FILTER]
+      Name                modify
+      Match               application.*
+      Remove              Kube.<Metadata_1>
+      Remove              Kube.<Metadata_2>
+      Remove              Kube.<Metadata_3>
+
+  [FILTER]
+      Name                nest
+      Match               application.*
+      Operation           nest
+      Wildcard            Kube.*
+      Nested_under        kubernetes
+      Remove_prefix       Kube.
+
+additionalOutputs: |
+  [OUTPUT]
+      Name                cloudwatch_logs
+      Match               application.*
+      region              $${AWS_REGION}
+      log_group_name      /aws/containerinsights/$${CLUSTER_NAME}/application
+      log_stream_prefix   $${HOST_NAME}-
+      log_format          json
+      auto_create_group   true
+      log_retention_days  ${application_log_retention_days}
+      #extra_user_agent   container-insights
+
+  [OUTPUT]
+      Name                cloudwatch_logs
+      Match               platform.*
+      region              $${AWS_REGION}
+      log_group_name      /aws/containerinsights/$${CLUSTER_NAME}/platform
+      log_stream_prefix   $${HOST_NAME}-
+      log_format          json
+      auto_create_group   true
+      log_retention_days  ${platform_log_retention_days}
+      #extra_user_agent   container-insights
+
+%{~ if send_fluentbit_logs_to_cloudwatch }
+  [OUTPUT]
+      Name                cloudwatch_logs
+      Match               fluentbit.*
+      region              $${AWS_REGION}
+      log_group_name      /aws/containerinsights/$${CLUSTER_NAME}/fluentbit
+      log_stream_prefix   $${HOST_NAME}-
+      log_format          json
+      auto_create_group   true
+      log_retention_days  ${fluentbit_log_retention_days}
+      #extra_user_agent   container-insights
+%{~ endif }
+
+cloudWatchLogs:
+  enabled: false
+
+livenessProbe:
+  httpGet:
+    port: ${http_port}
+
+serviceMonitor:
+  service:
+    targetPort: ${http_port}
+
+resources:
+  limits:
+    memory: 100Mi
+  requests:
+    cpu: 250m
+    memory: 50Mi
+
+env:
+  - name: AWS_REGION
+    value: "${aws_region}"
+  - name: CLUSTER_NAME
+    value: "${cluster_name}"
+  - name: HTTP_SERVER
+    value: "${http_server}"
+  - name: HTTP_PORT
+    value: "${http_port}"
+  - name: READ_FROM_HEAD
+    value: "${read_from_head}"
+  - name: READ_FROM_TAIL
+    value: "${read_from_tail}"
+  - name: HOST_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+serviceAccount:
+  create: false
+  name: ${service_account_name}
+
+tolerations:
+  - operator: Exists
