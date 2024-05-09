@@ -1,17 +1,21 @@
 locals {
+  helm_chart_name                = "aws-for-fluent-bit"
+  fluentbit_log_file_starts_with = join("-", [var.helm_release_name, local.helm_chart_name])
+
   k8s_common_labels = merge(
     var.k8s_default_labels,
-    var.k8s_additional_labels
+    var.k8s_additional_labels,
   )
 
   exclude_from_application_log_group = sort(distinct(concat(
     var.default_exclude_from_application_log_group,
-    var.additional_exclude_from_application_log_group
+    var.additional_exclude_from_application_log_group,
+    [local.fluentbit_log_file_starts_with]
   )))
 
   include_in_platform_log_group = sort(distinct(concat(
     var.default_additional_include_in_platform_log_group,
-    var.additional_include_in_platform_log_group
+    var.additional_include_in_platform_log_group,
   )))
 }
 
@@ -68,7 +72,7 @@ resource "kubernetes_secret_v1" "this" {
 resource "helm_release" "this" {
   name             = var.helm_release_name
   repository       = "https://aws.github.io/eks-charts"
-  chart            = "aws-for-fluent-bit"
+  chart            = local.helm_chart_name
   version          = var.helm_chart_version
   namespace        = kubernetes_namespace_v1.this.metadata[0].name
   create_namespace = false
@@ -86,6 +90,7 @@ resource "helm_release" "this" {
           http_port                         = var.fluentbit_http_server_port
           read_from_head                    = var.fluentbit_read_from_head
           read_from_tail                    = var.fluentbit_read_from_tail
+          fluentbit_log_file_starts_with    = local.fluentbit_log_file_starts_with
           send_fluentbit_logs_to_cloudwatch = var.fluentbit_send_fluentbit_logs_to_cloudwatch
 
           # Fine tune for the log groups

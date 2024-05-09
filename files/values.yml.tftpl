@@ -82,7 +82,7 @@ additionalInputs: |
   [INPUT]
       Name                tail
       Tag                 fluentbit.*
-      Path                /var/log/containers/fluent-bit-aws-for-fluent-bit*
+      Path                /var/log/containers/${fluentbit_log_file_starts_with}*
       Parser              docker, cri
       DB                  /var/fluent-bit/state/flb_log.db
       Mem_Buf_Limit       5MB
