@@ -99,6 +99,7 @@ resource "helm_release" "this" {
           fluentbit_log_retention_days                  = var.fluentbit_log_retention_days
           additional_exclude_from_application_log_group = local.exclude_from_application_log_group
           additional_include_in_platform_log_group      = local.include_in_platform_log_group
+          additional_filters                            = var.additional_filters
         }
       ),
     ],

@@ -149,6 +149,12 @@ variable "additional_include_in_platform_log_group" {
   default     = []
 }
 
+variable "additional_filters" {
+  description = "Filter block(s) to add to the FluentBit configuration. The filter block(s) must be in the format of a string."
+  type        = string
+  default     = ""
+}
+
 variable "application_log_retention_days" {
   description = "The retention period for the application log group. Remember to check the valid values for the retention period in the AWS CloudWatch documentation."
   type        = number

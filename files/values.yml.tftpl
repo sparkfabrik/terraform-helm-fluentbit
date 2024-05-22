@@ -42,6 +42,16 @@ service:
         Time_Key            time
         Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
 
+    # The following parser is inspired by:
+    # https://github.com/fluent/fluent-bit/issues/5656
+    # https://docs.aws.amazon.com/eks/latest/userguide/fargate-logging.html
+    [PARSER]
+        Name                custom_json
+        Format              Regex
+        Regex               ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%L%z
+
 input:
   enabled: false
 
@@ -53,8 +63,8 @@ additionalInputs: |
       Path                /var/log/containers/*.log
       Docker_Mode         On
       Docker_Mode_Flush   5
-      Docker_Mode_Parser  container_firstline
-      Parser              docker, cri
+      Docker_Mode_Parser  custom_json
+      Parser              custom_json
       DB                  /var/fluent-bit/state/flb_container.db
       Mem_Buf_Limit       50MB
       Skip_Long_Lines     On
@@ -69,8 +79,8 @@ additionalInputs: |
       Path                ${join(", ", formatlist("/var/log/containers/%s*.log", distinct(additional_include_in_platform_log_group)))}
       Docker_Mode         On
       Docker_Mode_Flush   5
-      Docker_Mode_Parser  container_firstline
-      Parser              docker, cri
+      Docker_Mode_Parser  custom_json
+      Parser              custom_json
       DB                  /var/fluent-bit/state/flb_platform.db
       Mem_Buf_Limit       50MB
       Skip_Long_Lines     On
@@ -83,7 +93,7 @@ additionalInputs: |
       Name                tail
       Tag                 fluentbit.*
       Path                /var/log/containers/${fluentbit_log_file_starts_with}*
-      Parser              docker, cri
+      Parser              custom_json
       DB                  /var/fluent-bit/state/flb_log.db
       Mem_Buf_Limit       5MB
       Skip_Long_Lines     On
@@ -97,7 +107,7 @@ additionalInputs: |
       Docker_Mode         On
       Docker_Mode_Flush   5
       Docker_Mode_Parser  cwagent_firstline
-      Parser              docker, cri
+      Parser              custom_json
       DB                  /var/fluent-bit/state/flb_cwagent.db
       Mem_Buf_Limit       5MB
       Skip_Long_Lines     On
@@ -141,6 +151,10 @@ additionalFilters: |
       Wildcard            Kube.*
       Nested_under        kubernetes
       Remove_prefix       Kube.
+
+%{~ if additional_filters != "" }
+  ${additional_filters}
+%{~ endif }
 
 additionalOutputs: |
   [OUTPUT]
