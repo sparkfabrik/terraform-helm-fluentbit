@@ -8,6 +8,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1] - 2024-06-03
+
+[Compare with previous version](https://github.com/sparkfabrik/terraform-helm-fluentbit/compare/0.3.0...0.3.1)
+
+### Changed
+
+- Fix: change `kubernetes` filter to match platform and fluentbit logs as well. Use `Match_regex` instead of `Match` in other filters.
+
 ## [0.3.0] - 2024-05-22
 
 [Compare with previous version](https://github.com/sparkfabrik/terraform-helm-fluentbit/compare/0.2.0...0.3.0)
