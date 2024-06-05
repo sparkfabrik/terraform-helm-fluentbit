@@ -1,4 +1,4 @@
-output "finale_k8s_common_labels" {
+output "final_k8s_common_labels" {
   description = "The final list of common labels to apply to the Kubernetes resources."
   value       = local.k8s_common_labels
 }
