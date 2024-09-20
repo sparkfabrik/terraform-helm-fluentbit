@@ -12,6 +12,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fix typo in outputs: `final_k8s_common_labels` instead of `finale_k8s_common_labels`.
 
+## [0.4.0] - 2024-09-20
+
+[Compare with previous version](https://github.com/sparkfabrik/terraform-helm-fluentbit/compare/0.3.1...0.4.0)
+
+### Changed
+
+- Feat: added a new default log group `application-errors` containing all application errors `4xx` and `5xx`
+
 ## [0.3.1] - 2024-06-03
 
 [Compare with previous version](https://github.com/sparkfabrik/terraform-helm-fluentbit/compare/0.3.0...0.3.1)

@@ -57,7 +57,7 @@ It also opinionatedly configures FluentBit to send logs to CloudWatch and to exc
 |------|-------------|
 | <a name="output_final_exclude_from_application_log_group"></a> [final\_exclude\_from\_application\_log\_group](#output\_final\_exclude\_from\_application\_log\_group) | The final list of log files to exclude from the application log group. |
 | <a name="output_final_include_in_platform_log_group"></a> [final\_include\_in\_platform\_log\_group](#output\_final\_include\_in\_platform\_log\_group) | The final list of log files to include in the platform log group. |
-| <a name="output_finale_k8s_common_labels"></a> [finale\_k8s\_common\_labels](#output\_finale\_k8s\_common\_labels) | The final list of common labels to apply to the Kubernetes resources. |
+| <a name="output_final_k8s_common_labels"></a> [final\_k8s\_common\_labels](#output\_final\_k8s\_common\_labels) | The final list of common labels to apply to the Kubernetes resources. |
 
 ## Resources
 

@@ -75,6 +75,23 @@ additionalInputs: |
 
   [INPUT]
       Name                tail
+      Tag                 application-errors.*
+      Exclude_Path        ${join(", ", formatlist("/var/log/containers/%s*.log", distinct(additional_exclude_from_application_log_group)))}
+      Path                /var/log/containers/*.log
+      Docker_Mode         On
+      Docker_Mode_Flush   5
+      Docker_Mode_Parser  custom_json
+      Parser              custom_json
+      DB                  /var/fluent-bit/state/flb_container.db
+      Mem_Buf_Limit       50MB
+      Skip_Long_Lines     On
+      Refresh_Interval    10
+      Rotate_Wait         30
+      storage.type        filesystem
+      Read_from_Head      $${READ_FROM_HEAD}
+
+  [INPUT]
+      Name                tail
       Tag                 platform.*
       Path                ${join(", ", formatlist("/var/log/containers/%s*.log", distinct(additional_include_in_platform_log_group)))}
       Docker_Mode         On
@@ -118,7 +135,7 @@ filter:
   enabled: false
 
 additionalFilters: |
-  %{~ for tag in ["application", "platform", "fluentbit"] ~}
+  %{~ for tag in ["application", "application-errors", "platform", "fluentbit"] ~}
   [FILTER]
       Name                kubernetes
       Match_regex         ${tag}.*
@@ -134,25 +151,31 @@ additionalFilters: |
 
   [FILTER]
       Name                nest
-      Match_regex         application.*|platform.*|fluentbit.*
+      Match_regex         application.*|application-errors.*|platform.*|fluentbit.*
       Operation           lift
       Nested_under        kubernetes
       Add_prefix          Kube.
 
   [FILTER]
       Name                modify
-      Match_regex         application.*|platform.*|fluentbit.*
+      Match_regex         application.*|application-errors.*|platform.*|fluentbit.*
       Remove              Kube.<Metadata_1>
       Remove              Kube.<Metadata_2>
       Remove              Kube.<Metadata_3>
 
   [FILTER]
       Name                nest
-      Match_regex         application.*|platform.*|fluentbit.*
+      Match_regex         application.*|application-errors.*|platform.*|fluentbit.*
       Operation           nest
       Wildcard            Kube.*
       Nested_under        kubernetes
       Remove_prefix       Kube.
+
+  # Retrive logs with status code 4xx and 5xx
+  [FILTER]
+      Name                grep
+      Match               application-errors.*
+      Regex               $log_processed['status'] [45][0-9]{2}
 
 %{~ if additional_filters != "" }
   ${additional_filters}
@@ -164,6 +187,17 @@ additionalOutputs: |
       Match               application.*
       region              $${AWS_REGION}
       log_group_name      /aws/containerinsights/$${CLUSTER_NAME}/application
+      log_stream_prefix   $${HOST_NAME}-
+      log_format          json
+      auto_create_group   true
+      log_retention_days  ${application_log_retention_days}
+      #extra_user_agent   container-insights
+
+  [OUTPUT]
+      Name                cloudwatch_logs
+      Match               application-errors.*
+      region              $${AWS_REGION}
+      log_group_name      /aws/containerinsights/$${CLUSTER_NAME}/application-errors
       log_stream_prefix   $${HOST_NAME}-
       log_format          json
       auto_create_group   true
