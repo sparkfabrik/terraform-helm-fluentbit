@@ -175,7 +175,7 @@ additionalFilters: |
   [FILTER]
       Name                grep
       Match               application-errors.*
-      Regex               $log_processed['level'] [45][0-9]{2}
+      Regex               $$log_processed['status'] [45][0-9]{2}
 
 %{~ if additional_filters != "" }
   ${additional_filters}
