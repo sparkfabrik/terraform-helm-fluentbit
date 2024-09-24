@@ -171,12 +171,6 @@ additionalFilters: |
       Nested_under        kubernetes
       Remove_prefix       Kube.
 
-  # Retrive logs with status code 4xx and 5xx
-  [FILTER]
-      Name                grep
-      Match               apperrors.*
-      Regex               $log_processed['status'] [345][0-9]{2}
-
 %{~ if additional_filters != "" }
   ${additional_filters}
 %{~ endif }
