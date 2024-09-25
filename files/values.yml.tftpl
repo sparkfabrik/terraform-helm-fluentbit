@@ -172,14 +172,14 @@ additionalFilters: |
       Remove_prefix       Kube.
 
   [FILTER]
-      Name              type_converter
-      Match             apperrors.*
-      uint_key          $log_processed['status'] response_status string
+      Name                type_converter
+      Match               apperrors.*
+      uint_key            $log_processed['status'] response_status string
 
   [FILTER]
-      Name              grep
-      Match             apperrors.*
-      Regex             response_status [45][0-9]{2}
+      Name                grep
+      Match               apperrors.*
+      Regex               response_status [45][0-9]{2}
 
 %{~ if additional_filters != "" }
   ${additional_filters}
