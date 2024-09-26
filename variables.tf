@@ -13,7 +13,7 @@ variable "helm_release_name" {
 variable "helm_chart_version" {
   description = "The version of the aws-for-fluent-bit Helm chart."
   type        = string
-  default     = "0.1.32"
+  default     = "0.1.34"
 }
 
 variable "helm_additional_values" {
