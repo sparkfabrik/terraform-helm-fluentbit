@@ -177,8 +177,15 @@ additionalFilters: |
       uint_key            $log_processed['status'] response_status string
 
   [FILTER]
+      Name                type_converter
+      Match               apperrors.*
+      uint_key            $log_processed['level'] response_level string
+
+  [FILTER]
       Name                grep
       Match               apperrors.*
+      Logical_Op          OR
+      Regex               response_level [45][0-9]{2}
       Regex               response_status [45][0-9]{2}
 
 %{~ if additional_filters != "" }
