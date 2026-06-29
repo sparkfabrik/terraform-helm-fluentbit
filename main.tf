@@ -21,7 +21,7 @@ locals {
 
 module "iam_assumable_role_with_oidc_for_fluent_bit" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   create_role      = true
   role_name        = var.aws_fluentbit_role_name
