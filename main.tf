@@ -20,14 +20,23 @@ locals {
 }
 
 module "iam_assumable_role_with_oidc_for_fluent_bit" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version = "~> 5.0"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  version = "~> 6.0"
 
-  create_role      = true
-  role_name        = var.aws_fluentbit_role_name
-  role_policy_arns = var.role_policy_arns
-  provider_url     = var.cluster_oidc_issuer_host
-  oidc_fully_qualified_subjects = [
+  enable_oidc = true
+
+  # v6 defaults use_name_prefix to true, which would turn the role name into a
+  # prefix and rename the live role.
+  use_name_prefix = false
+  name            = var.aws_fluentbit_role_name
+
+  oidc_provider_urls = [var.cluster_oidc_issuer_host]
+
+  # role_policy_arns stays a list on this module's interface. The keys follow the
+  # list index, so the attachment order matches the v5 count-based behaviour.
+  policies = { for idx, arn in var.role_policy_arns : "p${idx}" => arn }
+
+  oidc_subjects = [
     "system:serviceaccount:${var.namespace}:${var.k8s_fluentbit_service_account_name}"
   ]
 }
@@ -50,7 +59,7 @@ resource "kubernetes_service_account_v1" "this" {
     namespace = kubernetes_namespace_v1.this.metadata[0].name
     labels    = local.k8s_common_labels
     annotations = {
-      "eks.amazonaws.com/role-arn" = module.iam_assumable_role_with_oidc_for_fluent_bit.iam_role_arn
+      "eks.amazonaws.com/role-arn" = module.iam_assumable_role_with_oidc_for_fluent_bit.arn
     }
   }
 }

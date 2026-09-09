@@ -72,7 +72,7 @@ It also opinionatedly configures FluentBit to send logs to CloudWatch and to exc
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_iam_assumable_role_with_oidc_for_fluent_bit"></a> [iam\_assumable\_role\_with\_oidc\_for\_fluent\_bit](#module\_iam\_assumable\_role\_with\_oidc\_for\_fluent\_bit) | terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc | ~> 5.0 |
+| <a name="module_iam_assumable_role_with_oidc_for_fluent_bit"></a> [iam\_assumable\_role\_with\_oidc\_for\_fluent\_bit](#module\_iam\_assumable\_role\_with\_oidc\_for\_fluent\_bit) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.0 |
 
 
 <!-- END_TF_DOCS -->
